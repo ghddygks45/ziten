@@ -1,0 +1,231 @@
+$(function () {
+
+    var breakpointWidth = 1217,
+        breakpointHeight = 500;
+
+    var agent = navigator.userAgent.toLowerCase();
+
+
+
+
+    function mobileClassActive() {
+        $("html").removeClass("desktop").addClass("mobile");
+    }
+
+    function pcClassActive() {
+        $("html").removeClass("mobile").addClass("desktop");
+    }
+
+    // desktop, mobile 구분
+    if ($(this).width() < breakpointWidth || $(this).outerHeight() < breakpointHeight) {
+        mobileClassActive()
+
+    } else {
+        pcClassActive()
+    }
+
+    // reSize
+    function reSize() {
+        $(window).resize(function () {
+            if (this.resizeTO) {
+                clearTimeout(this.resizeTO);
+            }
+            this.resizeTO = setTimeout(function () {
+                $(this).trigger('resizeEnd');
+            }, 100);
+        });
+
+        $(window).on("resizeEnd", function () {
+            if ($(this).width() < breakpointWidth || $(this).outerHeight() < breakpointHeight) {
+                // mobile
+                mobileClassActive()
+                itemScrollDesign(key)
+
+            } else {
+                // pc
+                pcClassActive()
+                itemScrollDesign(key)
+
+            }
+        })
+    }
+    reSize()
+
+
+
+
+
+
+    $("#fullpage").fullpage({
+        anchors: ["firstPage", "secondPage", "3rdPage", "4thpage", "lastPage"],
+        // navigationTooltips: ['홈', '주요서비스', '소식', '사학통계', '공단소개', '푸터'],
+        showActiveTooltip: true,
+        navigation: true,
+        scrollingSpeed: 1000,
+        //스크롤로 바꾸는 기능
+        responsiveWidth: breakpointWidth,
+        responsiveHeight: breakpointHeight,
+
+        // afterLoad: function(anchorLink, index){
+        //     console.log('실행');
+        //     $('body').off('scroll touchmove mousewheel DOMMouseScroll');
+        // },
+
+        afterResponsive: function (isResponsive) {
+            $('body').off('scroll touchmove mousewheel DOMMouseScroll wheel');
+
+        },
+
+
+        // 구역을 떠나면 콜백이 실행됩니다.
+        onLeave: function (origin, destination, direction) {
+            var leavingSection = this;
+
+            if (destination == "3") {
+                console.log('destination == "3"')
+                if ($(".item_wrap").hasClass('open')) {
+                    $('body').on('scroll touchmove mousewheel DOMMouseScroll wheel', function (event) {
+                        console.log('스크롤막기1')
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return false;
+                    });
+
+                    horizonScroll()
+
+                }
+
+            }
+
+        }
+    });
+
+    // More
+    function leadMore(count) {
+        $(".item").slice(0, count).css({
+            'opacity': 1,
+            'position': 'static'
+        })
+    }
+    leadMore(2)
+
+    var key;
+    $("#more").click(function () {
+        $(".item").css({
+            "opacity": 1,
+            'position': 'static'
+        });
+        key = true;
+
+
+        $('body').on('scroll touchmove mousewheel DOMMouseScroll wheel', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+
+        itemScrollDesign(key)
+
+    });
+
+
+    function itemScrollDesign(key) {
+        if (key && $("html").hasClass('desktop')) {
+            $(".item_wrap").css('overflow', 'auto');
+            $(".item_wrap").addClass('open');
+            var total = 0;
+            $(".item").each(function (idx, item) {
+                var itemWidth = $(".item").eq(idx)[0].offsetWidth;
+                total = total + itemWidth;
+            })
+            $(".item_box").css('width', total);
+        } else if (key) {
+            // 각 style없애기.
+            $(".item_box").removeAttr('style');
+        }
+
+        horizonScroll()
+    }
+
+
+    function horizonScroll() {
+        $(".item_wrap").on('scroll touchmove mousewheel DOMMouseScroll wheel', function (e) {
+
+
+
+            if ($(this).width() > breakpointWidth && $(this).outerHeight() > breakpointHeight) {
+
+                var left = $(this).scrollLeft();
+
+                var E = e.originalEvent;
+                var wheelDelta = E.wheelDelta;
+                var fireFox_whellDelta = E.detail;
+                var f_whellDelta = E.detail * -20;
+
+
+
+
+                // crhome
+                if (wheelDelta > 0) {
+                    console.log('crhom : right')
+                    $(this).scrollLeft(-wheelDelta + $(this).scrollLeft());
+
+                    if ($(this).scrollLeft() == 0) {
+                        $(".item_wrap").off('mousewheel wheel');
+                        $('body').off('scroll touchmove mousewheel wheel')
+                    }
+
+                } else if (wheelDelta < 0) {
+                    console.log('crhom : left');
+
+                    $(this).scrollLeft(-wheelDelta + $(this).scrollLeft());
+
+
+                    if ($(this).scrollLeft() + $(this).width() >= $(".item_box").width() - 1) { // 더보기 후 스크롤이 끝에 갔을 경우
+                        $(".item_wrap").off('mousewheel wheel');
+                        $('body').off('scroll touchmove mousewheel wheel');
+
+                    }
+                }
+
+
+                // firefox
+
+                if (agent.indexOf("firefox") != -1) {
+                    console.log(fireFox_whellDelta)
+
+                    if (fireFox_whellDelta < 0) {
+                        console.log('firfox : right')
+
+                        $(this).scrollLeft(-f_whellDelta + left);
+
+
+                        if ($(this).scrollLeft() == 0) {
+                            console.log('up, 실행');
+                            $(".item_wrap").off('scroll touchmove mousewheel DOMMouseScroll wheel');
+                            $('body').off('scroll touchmove mousewheel DOMMouseScroll wheel')
+                        }
+
+                    } else if (fireFox_whellDelta > 0) {
+
+                        console.log('firfox : left')
+
+                        $(this).scrollLeft(-f_whellDelta + left);
+
+                        if ($(this).scrollLeft() + $(this).width() == $(".item_box").width()) { // 더보기 후 스크롤이 끝에 갔을 경우
+                            console.log('down, 실행');
+                            $(".item_wrap").off('scroll touchmove mousewheel DOMMouseScroll wheel');
+                            $('body').off('scroll touchmove mousewheel DOMMouseScroll wheel')
+                        }
+                    }
+
+
+                }
+
+
+            }
+
+        })
+    }
+
+})

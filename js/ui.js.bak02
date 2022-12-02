@@ -1,0 +1,360 @@
+$(function () {
+
+    var agent = navigator.userAgent.toLowerCase();
+
+    var breakpointWidth = '1218',
+        breakpointHeight = '500',
+        pageCount = 0,
+        currentWidth,
+        currentHeight,
+        scrolling;
+
+
+
+    function mobileClassActive() {
+        $("html").removeClass("desktop").addClass("mobile");
+    }
+
+    function pcClassActive() {
+        $("html").removeClass("mobile").addClass("desktop");
+    }
+
+    function current_WidthHeight() {
+        currentWidth = $(window).width();
+        currentHeight = $(window).outerHeight();
+        $(".fullPage > .section").css({
+            'width': currentWidth,
+            'height': currentHeight
+        })
+    }
+
+
+    // desktop, mobile 구분
+    if ($(this).width() < breakpointWidth || $(this).outerHeight() < breakpointHeight) {
+
+        mobileClassActive()
+
+    } else {
+
+        pcClassActive()
+    }
+
+
+
+    // reSize
+    function reSize() {
+        $(window).resize(function () {
+            if (this.resizeTO) {
+                clearTimeout(this.resizeTO);
+            }
+            this.resizeTO = setTimeout(function () {
+                $(this).trigger('resizeEnd');
+            }, 100);
+        });
+
+        $(window).on("resizeEnd", function () {
+            if ($(this).width() < breakpointWidth || $(this).outerHeight() < breakpointHeight) {
+                // mobile
+                mobileClassActive()
+                itemScrollDesign(key)
+
+                $("main").removeClass("fullPage").find(">.section").removeAttr('style');
+                $("body").css('overflow-y', 'auto');
+
+            } else {
+                // pc
+                pcClassActive()
+
+                FullpageInit()
+
+                itemScrollDesign(key)
+            }
+        })
+
+    }
+    reSize()
+
+
+    function FullpageInit() {
+
+        if ($(this).width() > breakpointWidth && $(this).outerHeight() > breakpointHeight) {
+
+            console.log('fullPage Init')
+
+            $("main").addClass("fullPage");
+            $("body").css('overflow-y', 'hidden');
+
+            current_WidthHeight()
+
+        }
+
+    }
+    FullpageInit()
+
+
+
+
+
+    function currentPageIndex() {
+        $(".section").each(function (idx, item) {
+            target = $('.section').eq(idx);
+            targetTop = target.offset().top;
+            if (targetTop <= scrollTop) {
+                if ($(this).width() < breakpointWidth || $(this).outerHeight() < breakpointHeight) {
+                    $('.section').removeClass('on');
+                    $('.section').eq(idx).addClass('on');
+                }
+                pageCount = idx;
+            }
+        })
+    }
+
+
+    lastPage = $(".section").length - 1;
+
+    $(window).on('mousewheel DOMMouseScroll', function (e) {
+        console.log('스크롤실행')
+        scrollTop = $(window).scrollTop()
+
+        currentPageIndex();
+        var currentPage = pageCount;
+
+
+        // 애니메이션이 실행되는동안 스크롤 막기.
+        if ($('html').is(":animated")) return;
+        // 모바일에선 사용안함.
+        if ($('html').hasClass('mobile')) return;
+
+
+        var wheelDelta = e.originalEvent.wheelDelta; // for IE, Chrome, Opera
+        var fireFox_whellDelta = e.originalEvent.detail; // for FireFox
+
+
+        if (wheelDelta < 0 || fireFox_whellDelta > 0) { // firefox : fireFox_whellDelta
+            console.log('down')
+            if (currentPage < lastPage) {
+                currentPage++
+            }
+        } else if (wheelDelta > 0 || fireFox_whellDelta < 0) { // firefox : fireFox_whellDelta
+            console.log('up')
+            if (!(currentPage == 0)) {
+                currentPage--
+            }
+        }
+
+        if (currentPage == 2) {
+            $(".item_wrap").on('scroll mousewheel DOMMouseScroll', function (e) {
+
+
+                if ($(this).width() > breakpointWidth && $(this).outerHeight() > breakpointHeight) {
+
+                    // html, scroll 막음
+                    $("html").on('mousewheel DOMMouseScroll', function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return false;
+                    });
+
+                    var left = $(this).scrollLeft();
+
+                    var E = e.originalEvent;
+                    var wheelDelta = E.wheelDelta;
+                    var fireFox_whellDelta = E.detail;
+                    var f_whellDelta = E.detail * -20;
+
+                    // crhome
+                    if (wheelDelta > 0) {
+
+                        console.log('crhom : right')
+                        $(this).scrollLeft(-wheelDelta + $(this).scrollLeft());
+
+                        if ($(this).scrollLeft() == 0) {
+                            console.log('실행');
+                            // 왜 요건 안될까??
+                            $(".item_wrap").off('mousewheel DOMMouseScroll');
+                        }
+
+                    } else if (wheelDelta < 0) {
+                        console.log('crhom : left');
+
+                        $(this).scrollLeft(-wheelDelta + $(this).scrollLeft());
+
+                        console.log($(this).scrollLeft())
+                        if ($(this).scrollLeft() + $(this).width() == $(".item_box").width()) { // 더보기 후 스크롤이 끝에 갔을 경우
+                            console.log('실행');
+                            $(".item_wrap").off('mousewheel DOMMouseScroll');
+                            $("html").off('mousewheel DOMMouseScroll');
+
+                        }
+                    }
+
+
+                    // firefox
+                    if (agent.indexOf("firefox") != -1) {
+
+                        if (fireFox_whellDelta < 0) {
+                            console.log('firfox : right')
+
+                            $(this).scrollLeft(-f_whellDelta + left);
+
+                            console.log($(this).scrollLeft())
+
+                            if ($(this).scrollLeft() == 0) {
+                                console.log('up, 실행');
+                                $("window").off('scroll');
+                                console.log('왜 요거하면 안됌?')
+                                $(".item_wrap").off('mousewheel DOMMouseScroll')
+                                $("html").off('mousewheel DOMMouseScroll');
+                            }
+
+                        } else {
+
+                            console.log('firfox : left')
+
+
+                            $(this).scrollLeft(-f_whellDelta + left);
+
+                            if ($(this).scrollLeft() + $(this).width() == $(".item_box").width()) { // 더보기 후 스크롤이 끝에 갔을 경우
+                                console.log('down, 실행');
+                                $("window").off('scroll');
+                                $(".item_wrap").off('mousewheel DOMMouseScroll');
+                                $("html").off('mousewheel DOMMouseScroll');
+                            }
+                        }
+
+
+                    }
+
+                }
+
+            })
+        }
+
+        $(".section").removeClass('on');
+        $(".section").eq(currentPage).addClass('on')
+
+        scrolling = (currentPage) * currentHeight;
+
+        $('html, body').stop().animate({
+            scrollTop: scrolling
+        }, 1000)
+    })
+
+
+
+    // More
+    function leadMore(count) {
+
+        $(".item").slice(0, count).css({
+            'opacity': 1,
+            'position': 'static'
+        })
+    }
+    leadMore(2)
+
+    var key;
+    $("#more").click(function () {
+        $(".item").css({
+            "opacity": 1,
+            'position': 'static'
+        });
+        key = true;
+        itemScrollDesign(key)
+    });
+
+
+    function itemScrollDesign(key) {
+        if (key && $("html").hasClass('desktop')) {
+            var total = 0;
+            $(".item").each(function (idx, item) {
+                var itemWidth = $(".item").eq(idx)[0].offsetWidth;
+                total = total + itemWidth;
+            })
+            $(".item_box").css('width', total);
+        } else if (key) {
+            // 각 style없애기.
+            $(".item_box").removeAttr('style');
+        }
+
+    }
+
+
+    // $(".item_wrap").on('scroll mousewheel DOMMouseScroll', function (e) {
+
+
+    //     if ($(this).width() > breakpointWidth && $(this).outerHeight() > breakpointHeight) {
+
+    //         // html, scroll 막음
+    //         $("html").on('mousewheel DOMMouseScroll', function (event) {
+    //             event.preventDefault();
+    //             event.stopPropagation();
+    //             return false;
+    //         });
+
+    //         var left = $(this).scrollLeft();
+
+    //         var E = e.originalEvent;
+    //         var wheelDelta = E.wheelDelta;
+    //         var fireFox_whellDelta = E.detail;
+    //         var f_whellDelta = E.detail * -20;
+
+    //         // crhome
+    //         if (wheelDelta > 0) {
+
+    //             console.log('crhom : right')
+    //             $(this).scrollLeft(-wheelDelta + $(this).scrollLeft());
+
+    //             if ($(this).scrollLeft() == 0) {
+    //                 console.log('실행');
+    //                 $("window").off('scroll');
+    //                 $("html").off('mousewheel DOMMouseScroll');
+    //             }
+
+    //         } else if (wheelDelta < 0) {
+    //             console.log('crhom : left');
+
+    //             $(this).scrollLeft(-wheelDelta + $(this).scrollLeft());
+
+    //             console.log($(this).scrollLeft())
+    //             if ($(this).scrollLeft() + $(this).width() == $(".item_box").width()) { // 더보기 후 스크롤이 끝에 갔을 경우
+    //                 console.log('실행');
+    //                 $("window").off('scroll');
+    //                 $("html").off('mousewheel DOMMouseScroll');
+    //             }
+    //         }
+
+    //         // firefox
+    //         if (fireFox_whellDelta < 0) {
+    //             console.log('firfox : right')
+
+    //             $(this).scrollLeft(-f_whellDelta + left);
+
+    //             console.log($(this).scrollLeft())
+
+    //             if ($(this).scrollLeft() == 0) {
+    //                 console.log('실행');
+    //                 $("window").off('scroll');
+    //                 $(".item_wrap").off('mousewheel DOMMouseScroll')
+    //                 $("html").off('mousewheel DOMMouseScroll');
+    //             }
+
+    //         } else {
+
+    //             console.log('firfox : left')
+
+
+    //             $(this).scrollLeft(-f_whellDelta + left);
+
+    //             if ($(this).scrollLeft() + $(this).width() == $(".item_box").width()) { // 더보기 후 스크롤이 끝에 갔을 경우
+    //                 console.log('실행');
+    //                 $("window").off('scroll');
+    //                 $(".item_wrap").off('mousewheel DOMMouseScroll');
+    //                 $("html").off('mousewheel DOMMouseScroll');
+    //             }
+    //         }
+
+    //     }
+
+    // })
+
+})
